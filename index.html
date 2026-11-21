@@ -51,6 +51,15 @@ radial-gradient(circle at 18% 12%,rgba(130,75,20,.35),transparent 38%),radial-gr
 .paper h3{font-size:30px;font-weight:600;margin:0 0 14px}
 .paper .sg{text-align:right;font-size:26px;font-weight:600;margin:20px 0 0}
 .cclose{display:block;margin:22px auto 0;background:none;border:1px solid #5a2a1a;color:#c9a27a;border-radius:10px;padding:10px 26px;font-size:15px}
+
+.pin{margin:14px 0 4px}.pin span{display:inline-block;width:34px;height:46px;border-bottom:3px solid #5b3a1c;margin:0 5px;font-size:26px;line-height:46px}
+.pin.sh{animation:sh .45s}@keyframes sh{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+.keys{display:grid;grid-template-columns:repeat(3,62px);gap:10px;justify-content:center;margin-top:14px}
+.keys button{height:52px;border-radius:12px;border:1px solid #5b3a1c;background:rgba(90,55,25,.14);color:#3a2814;font:600 28px Caveat,cursive;touch-action:manipulation}
+.dp{display:grid;grid-template-columns:repeat(3,62px);grid-template-rows:repeat(3,54px);gap:6px;justify-content:center;margin:22px 0 0;user-select:none;-webkit-user-select:none}
+.dp button{border-radius:14px;border:1px solid var(--red);background:#1a0b0d;color:#fff;font-size:22px;touch-action:none}
+.dp .u{grid-area:1/2}.dp .l{grid-area:2/1}.dp .r{grid-area:2/3}.dp .d{grid-area:3/2}
+#mz{display:block;margin:6px auto 0}
 </style></head><body>
 <h1>♥ Nuestro registro ♥</h1>
 <div class="nav"><button id="prev">‹</button><div id="title"></div><button id="next">›</button></div>
@@ -74,6 +83,10 @@ radial-gradient(circle at 18% 12%,rgba(130,75,20,.35),transparent 38%),radial-gr
 <p style="margin:0">Con todo mi amor,</p>
 <div class="sg">Leito</div>
 </div></div><button class="cclose" id="cclose">Cerrar carta</button></div>
+<div class="cartaov" id="lock"><div class="paper" style="margin-top:7vh"><div class="bg"></div><div class="tx" style="text-align:center"><h3>Una carta te espera…</h3><p style="font-size:20px;margin:0">Escribe la clave para abrirla</p><div class="pin" id="pin"></div><div class="keys" id="keys"></div></div></div><button class="cclose" id="lclose">Volver</button></div>
+<div class="cartaov" id="maze"><div class="paper"><div class="bg"></div><div class="tx" style="text-align:center"><h3 style="font-size:26px;margin-bottom:6px">Llega hasta tu carta</h3><canvas id="mz"></canvas><p id="mmsg" style="font-size:19px;margin:10px 0 0;min-height:26px"></p></div></div>
+<div class="dp"><button class="u" data-d="0">▲</button><button class="l" data-d="3">◀</button><button class="r" data-d="1">▶</button><button class="d" data-d="2">▼</button></div>
+<button class="cclose" id="openC" style="display:none;border-color:var(--red);color:#fff;background:#1c0a0c">💌 Abrir carta</button><button class="cclose" id="mclose">Salir</button></div>
 <script>
 /* ===== CONFIGURA AQUÍ ===== */
 const FIREBASE_CONFIG={apiKey:"AIzaSyDpyJmbReOJ4sG_fT3PwaIh8J8P29zWW5E",authDomain:"veintiuno-ba859.firebaseapp.com",projectId:"veintiuno-ba859",storageBucket:"veintiuno-ba859.firebasestorage.app",messagingSenderId:"1087304259489",appId:"1:1087304259489:web:abc80649339bf65a089de0"};
@@ -138,7 +151,7 @@ $("send").onclick=async()=>{
     await db.doc("days/"+cur).set({emo:r.emo||"",nn:(r.nn||0)+1});
   }catch(x){$("st").textContent="No se pudo guardar"}
 };
-$("cartaBtn").onclick=()=>{$("carta").classList.add("on");$("carta").scrollTop=0};
+$("cartaBtn").onclick=openLock;
 $("cclose").onclick=()=>$("carta").classList.remove("on");
 $("close").onclick=()=>{$("sheet").classList.remove("on");if(unN){unN();unN=null}};
 render();
@@ -152,5 +165,112 @@ render();
         collection:p=>({onSnapshot:(n,e)=>fs.collection(P(p)).onSnapshot(s=>n({docs:s.docs.map(d=>({id:d.id,data:()=>d.data()}))}),e)})};
     db.collection("days").onSnapshot(s=>{days={};s.docs.forEach(d=>days[d.id]=d.data());render();if(cur&&$("sheet").classList.contains("on"))paintEmos()},()=>{$("st").textContent="Error de conexión"});
   }catch(x){$("st").textContent="Falta configurar Firebase"}
+})();
+/* ===== FUEGOS ARTIFICIALES ===== */
+function fireworks(){
+  const W=innerWidth,H=innerHeight,dpr=Math.min(devicePixelRatio||1,2);
+  const cv=document.createElement("canvas");cv.width=W*dpr;cv.height=H*dpr;
+  cv.style.cssText="position:fixed;inset:0;width:100%;height:100%;z-index:30";
+  document.body.appendChild(cv);const x=cv.getContext("2d");x.scale(dpr,dpr);
+  let stop=false;cv.onclick=()=>{stop=true;cv.remove()};
+  const pts=(text,maxH)=>{
+    const o=document.createElement("canvas");o.width=W;o.height=H;const g=o.getContext("2d");
+    let sz=Math.min(maxH,320);g.font=`900 ${sz}px Arial,sans-serif`;
+    while(g.measureText(text).width>W*.86&&sz>20){sz-=4;g.font=`900 ${sz}px Arial,sans-serif`}
+    g.fillStyle="#fff";g.textAlign="center";g.textBaseline="middle";g.fillText(text,W/2,H*.4);
+    const d=g.getImageData(0,0,W,H).data;let st=3,out;
+    for(;;st++){out=[];for(let y=0;y<H;y+=st)for(let i=0;i<W;i+=st)if(d[(y*W+i)*4+3]>128)out.push([i,y]);if(out.length<=520)break}
+    return out};
+  const seq=[["21",["#ff2a3a","#ffcf4d","#fff"],H*.38],["TE AMO",["#ff4d6d","#ff9aa8","#fff"],H*.2],["AMOCHITO",["#ff2a3a","#ffd166","#ff7b00"],H*.2]]
+    .map(([t,col,mh],i)=>({col,p:pts(t,mh),start:i*4.8,bx:W/2,by:H*.4,lx:W/2+(i-1)*W*.2,part:null}));
+  const T0=performance.now();
+  (function frame(){
+    if(stop)return;const t=(performance.now()-T0)/1000;x.clearRect(0,0,W,H);x.globalCompositeOperation="lighter";
+    for(const s of seq){
+      const l=t-s.start;if(l<0)continue;
+      if(l<.85){const u=l/.85,e=1-(1-u)*(1-u),px=s.lx+(s.bx-s.lx)*e,py=H+(s.by-H)*e;
+        x.fillStyle="#ffd98a";x.beginPath();x.arc(px,py,3,0,7);x.fill();
+        x.fillStyle="rgba(255,200,120,.35)";for(let k=1;k<9;k++){x.beginPath();x.arc(px-(s.bx-s.lx)*.012*k,py+k*7,2.4-k*.2,0,7);x.fill()}continue}
+      if(!s.part){s.part=s.p.map(([tx,ty])=>({tx,ty,c:s.col[Math.random()*3|0],vx:(Math.random()-.5)*60,vy:20+Math.random()*80}));
+        s.sp=Array.from({length:70},()=>{const a=Math.random()*6.283,v=60+Math.random()*190;return{vx:Math.cos(a)*v,vy:Math.sin(a)*v,c:s.col[Math.random()*3|0]}})}
+      const ts=l-.85;
+      for(const q of s.part){let px,py,al=1;
+        if(ts<1.1){const u=ts/1.1,e=1-Math.pow(1-u,3);px=s.bx+(q.tx-s.bx)*e;py=s.by+(q.ty-s.by)*e}
+        else if(ts<2.7){px=q.tx+Math.sin(t*9+q.tx)*.7;py=q.ty+Math.cos(t*8+q.ty)*.7;al=.75+.25*Math.sin(t*14+q.tx*3)}
+        else{const d=ts-2.7;if(d>1.3)continue;px=q.tx+q.vx*d;py=q.ty+q.vy*d+90*d*d;al=1-d/1.3}
+        x.globalAlpha=al*.35;x.fillStyle=q.c;x.beginPath();x.arc(px,py,4.2,0,7);x.fill();
+        x.globalAlpha=al;x.beginPath();x.arc(px,py,1.9,0,7);x.fill()}
+      if(ts<1.4)for(const q of s.sp){x.globalAlpha=1-ts/1.4;x.fillStyle=q.c;x.beginPath();x.arc(s.bx+q.vx*ts,s.by+q.vy*ts+110*ts*ts,2,0,7);x.fill()}
+    }
+    x.globalAlpha=1;
+    if(t<14.6)requestAnimationFrame(frame);else cv.remove()})();
+}
+/* ===== CLAVE ===== */
+const CLAVE="210525";let pin="";
+function paintPin(){$("pin").innerHTML=Array.from({length:6},(_,i)=>`<span>${pin[i]?"●":""}</span>`).join("")}
+function openLock(){pin="";paintPin();$("lock").classList.add("on")}
+(function(){
+  const k=["1","2","3","4","5","6","7","8","9","⌫","0",""];
+  $("keys").innerHTML=k.map(v=>v?`<button data-v="${v}">${v}</button>`:"<i></i>").join("");
+  $("keys").onclick=e=>{const b=e.target.closest("button");if(!b)return;const v=b.dataset.v;
+    if(v=="⌫")pin=pin.slice(0,-1);else if(pin.length<6)pin+=v;
+    paintPin();
+    if(pin.length==6){if(pin===CLAVE){setTimeout(()=>{$("lock").classList.remove("on");openMaze()},350)}
+      else{$("pin").classList.add("sh");setTimeout(()=>{$("pin").classList.remove("sh");pin="";paintPin()},500)}}};
+  $("lclose").onclick=()=>$("lock").classList.remove("on");
+})();
+/* ===== LABERINTO ===== */
+const MR=9,MC=9;
+const PATH=[[0,0],[0,1],[0,2],[1,2],[2,2],[2,1],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[3,5],[2,5],[1,5],[0,5],[0,4]].map(([r,c])=>[r+2,c+1]);
+const DR=[-1,0,1,0],DC=[0,1,0,-1];
+function mkMaze(){
+  let a=2105;const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const op=Array.from({length:MR},()=>Array(MC).fill(0)),seen=Array.from({length:MR},()=>Array(MC).fill(false));
+  const link=(r,c,d)=>{op[r][c]|=1<<d;op[r+DR[d]][c+DC[d]]|=1<<((d+2)%4)};
+  PATH.forEach(([r,c],i)=>{seen[r][c]=true;if(i){const[pr,pc]=PATH[i-1];link(pr,pc,DR.findIndex((_,d)=>pr+DR[d]==r&&pc+DC[d]==c))}});
+  const act=PATH.map(p=>p.slice());
+  while(act.length){const k=Math.floor(rnd()*act.length),[r,c]=act[k];
+    const ns=[0,1,2,3].filter(d=>{const y=r+DR[d],x=c+DC[d];return y>=0&&y<MR&&x>=0&&x<MC&&!seen[y][x]});
+    if(!ns.length){act.splice(k,1);continue}
+    const d=ns[Math.floor(rnd()*ns.length)];link(r,c,d);seen[r+DR[d]][c+DC[d]]=true;act.push([r+DR[d],c+DC[d]])}
+  return op}
+let G=null;
+function openMaze(){
+  const cs=Math.floor(Math.min(innerWidth-96,360)/MC),cv=$("mz"),dpr=Math.min(devicePixelRatio||1,2);
+  cv.style.width=cv.style.height=cs*MC+"px";cv.width=cv.height=cs*MC*dpr;
+  G={op:mkMaze(),cs,x:cv.getContext("2d"),dpr,r:PATH[0][0],c:PATH[0][1],p:0,won:false,idx:new Map(PATH.map(([r,c],i)=>[r*MC+c,i]))};
+  $("mmsg").textContent="Guía tu camino hasta la carta";$("openC").style.display="none";
+  $("maze").classList.add("on");$("maze").scrollTop=0;drawMaze()}
+function drawMaze(){
+  const {x,cs,dpr,op}=G;x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,cs*MC,cs*MR);
+  const ct=([r,c])=>[c*cs+cs/2,r*cs+cs/2];
+  x.lineCap=x.lineJoin="round";
+  if(G.p>0){x.beginPath();PATH.slice(0,G.p+1).forEach((q,i)=>{const[a,b]=ct(q);i?x.lineTo(a,b):x.moveTo(a,b)});
+    x.strokeStyle="rgba(200,15,30,.35)";x.lineWidth=cs*.5;x.stroke();x.strokeStyle="#c1121f";x.lineWidth=cs*.26;x.stroke()}
+  x.strokeStyle="#4a2f17";x.lineWidth=2.6;x.beginPath();
+  for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){const X=c*cs,Y=r*cs;
+    if(!(op[r][c]&1)){x.moveTo(X,Y);x.lineTo(X+cs,Y)}
+    if(!(op[r][c]&8)){x.moveTo(X,Y);x.lineTo(X,Y+cs)}
+    if(r==MR-1){x.moveTo(X,Y+cs);x.lineTo(X+cs,Y+cs)}
+    if(c==MC-1){x.moveTo(X+cs,Y);x.lineTo(X+cs,Y+cs)}}
+  x.stroke();
+  const[gx,gy]=ct(PATH[PATH.length-1]);x.font=`${cs*.72}px serif`;x.textAlign="center";x.textBaseline="middle";x.fillText("💌",gx,gy+1);
+  const px=G.c*cs+cs/2,py=G.r*cs+cs/2;x.fillStyle="#1a1a1a";x.strokeStyle="#ff4d5e";x.lineWidth=2;
+  x.beginPath();x.arc(px,py,cs*.24,0,7);x.fill();x.stroke()}
+function mv(d){
+  if(!G||G.won||!(G.op[G.r][G.c]&(1<<d)))return;
+  const j=G.idx.get(G.r*MC+G.c);G.r+=DR[d];G.c+=DC[d];const i=G.idx.get(G.r*MC+G.c);
+  if(i!==undefined&&j!==undefined){if(i==G.p+1&&j==G.p)G.p++;else if(i==G.p-1&&j==G.p)G.p--}
+  if(G.p==PATH.length-1&&i==G.p){G.won=true;$("mmsg").textContent="¡Lo lograste! Tu camino formó nuestro 21 ❤";setTimeout(()=>$("openC").style.display="block",600)}
+  drawMaze()}
+(function(){
+  document.querySelectorAll(".dp button").forEach(b=>{let t=null;const d=+b.dataset.d;
+    const st=()=>{clearInterval(t)};
+    b.addEventListener("pointerdown",e=>{e.preventDefault();mv(d);t=setInterval(()=>mv(d),150)});
+    ["pointerup","pointerleave","pointercancel"].forEach(n=>b.addEventListener(n,st))});
+  addEventListener("keydown",e=>{const d={ArrowUp:0,ArrowRight:1,ArrowDown:2,ArrowLeft:3}[e.key];if(d!==undefined&&$("maze").classList.contains("on")){e.preventDefault();mv(d)}});
+  $("mclose").onclick=()=>$("maze").classList.remove("on");
+  $("openC").onclick=()=>{$("maze").classList.remove("on");$("carta").classList.add("on");$("carta").scrollTop=0};
+  const n=new Date();if(key(n.getFullYear(),n.getMonth(),n.getDate())===CARTA_DIA||location.hash==="#fuegos")setTimeout(fireworks,500);
 })();
 </script></body></html>
